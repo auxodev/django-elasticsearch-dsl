@@ -1,5 +1,5 @@
 from elasticsearch_dsl import analyzer
-from django_elasticsearch_dsl import DocType, Index, fields
+from django_elasticsearch_dsl import ModelDocument, Index, fields
 
 from .models import Ad, Category, Car, Manufacturer
 
@@ -20,11 +20,8 @@ html_strip = analyzer(
 )
 
 
-@car_index.doc_type
-class CarDocument(DocType):
-    # test can override __init__
-    def __init__(self, *args, **kwargs):
-        super(CarDocument, self).__init__(*args, **kwargs)
+@car_index.document
+class CarDocument(ModelDocument):
 
     manufacturer = fields.ObjectField(properties={
         'name': fields.StringField(),
@@ -68,8 +65,8 @@ class CarDocument(DocType):
 manufacturer_index = Index('test_manufacturers').settings(**index_settings)
 
 
-@manufacturer_index.doc_type
-class ManufacturerDocument(DocType):
+@manufacturer_index.document
+class ManufacturerDocument(ModelDocument):
     country = fields.StringField()
 
     class Meta:
@@ -83,7 +80,7 @@ class ManufacturerDocument(DocType):
         doc_type = 'manufacturer_document'
 
 
-class CarWithPrepareDocument(DocType):
+class CarWithPrepareDocument(ModelDocument):
     manufacturer = fields.ObjectField(properties={
         'name': fields.StringField(),
         'country': fields.StringField(),
@@ -126,8 +123,8 @@ class CarWithPrepareDocument(DocType):
 ad_index = Index('test_ads').settings(**index_settings)
 
 
-@ad_index.doc_type
-class AdDocument(DocType):
+@ad_index.document
+class AdDocument(ModelDocument):
     description = fields.TextField(
         analyzer=html_strip,
         fields={'raw': fields.KeywordField()}
@@ -144,7 +141,7 @@ class AdDocument(DocType):
         doc_type = 'ad_document'
 
 
-class PaginatedAdDocument(DocType):
+class PaginatedAdDocument(ModelDocument):
     class Meta:
         model = Ad
         index = 'ad_index'

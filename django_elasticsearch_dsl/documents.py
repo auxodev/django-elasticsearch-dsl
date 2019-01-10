@@ -4,8 +4,7 @@ from django.db import models
 from django.core.paginator import Paginator
 from django.utils.six import add_metaclass, iteritems
 from elasticsearch.helpers import bulk
-from elasticsearch_dsl import DocType as DSLDocType
-from elasticsearch_dsl.document import DocTypeMeta as DSLDocTypeMeta
+from elasticsearch_dsl.document import IndexMeta as DSLIndexMeta, Document as DSLDocument
 from elasticsearch_dsl.field import Field
 
 from .apps import DEDConfig
@@ -50,15 +49,16 @@ model_field_class_to_field_class = {
 }
 
 
-class DocTypeMeta(DSLDocTypeMeta):
+class ModelIndexMeta(DSLIndexMeta):
+
     def __new__(cls, name, bases, attrs):
         """
-        Subclass default DocTypeMeta to generate ES fields from django
+        Subclass default ModelIndexMeta to generate ES fields from django
         models fields
         """
-        super_new = super(DocTypeMeta, cls).__new__
+        super_new = super(ModelIndexMeta, cls).__new__
 
-        parents = [b for b in bases if isinstance(b, DocTypeMeta)]
+        parents = [b for b in bases if isinstance(b, ModelIndexMeta)]
         if not parents:
             return super_new(cls, name, bases, attrs)
 
@@ -112,10 +112,11 @@ class DocTypeMeta(DSLDocTypeMeta):
         return cls
 
 
-@add_metaclass(DocTypeMeta)
-class DocType(DSLDocType):
+@add_metaclass(ModelIndexMeta)
+class ModelDocument(DSLDocument):
+
     def __init__(self, related_instance_to_ignore=None, **kwargs):
-        super(DocType, self).__init__(**kwargs)
+        super(ModelDocument, self).__init__(**kwargs)
         self._related_instance_to_ignore = related_instance_to_ignore
 
     def __eq__(self, other):
@@ -142,7 +143,7 @@ class DocType(DSLDocType):
     def prepare(self, instance):
         """
         Take a model instance, and turn it into a dict that can be serialized
-        based on the fields defined on this DocType subclass
+        based on the fields defined on this ModelDocument subclass
         """
         data = {}
         for name, field in iteritems(self._doc_type._fields()):
@@ -230,3 +231,9 @@ class DocType(DSLDocType):
         return self.bulk(
             self._get_actions(object_list, action), **kwargs
         )
+
+
+# additions for backwards compatibility
+# TODO: remove the document type
+DocTypeMeta = ModelIndexMeta
+DocType = ModelDocument
