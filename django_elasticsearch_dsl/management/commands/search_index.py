@@ -105,7 +105,11 @@ class Command(BaseCommand):
                         i * CHUNK_SIZE, i * CHUNK_SIZE + qs2.count(), doc._doc_type.model.__name__)
                     )
                     qs2 = qs[i*CHUNK_SIZE:]
-                doc().update(qs2)
+                    
+                try:
+                    doc().update(qs2)
+                except Exception as e:
+                    self.stdout.write('Problems witn chunk')
 
     def _delete(self, models, options):
         index_names = [str(index) for index in registry.get_indices(models)]
