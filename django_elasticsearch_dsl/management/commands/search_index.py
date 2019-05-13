@@ -84,7 +84,7 @@ class Command(BaseCommand):
             index.create()
 
     def _populate(self, models, options):
-        CHUNK_SIZE = 1000
+        CHUNK_SIZE = 50
 
         for doc in registry.get_documents(models):
             qs = doc().get_queryset()
