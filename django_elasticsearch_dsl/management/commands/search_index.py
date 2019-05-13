@@ -84,12 +84,28 @@ class Command(BaseCommand):
             index.create()
 
     def _populate(self, models, options):
+        CHUNK_SIZE = 1000
+
         for doc in registry.get_documents(models):
             qs = doc().get_queryset()
+
             self.stdout.write("Indexing {} '{}' objects".format(
                 qs.count(), doc._doc_type.model.__name__)
             )
-            doc().update(qs)
+
+            ranges_count = qs.count() // CHUNK_SIZE
+            for i in range(ranges_count):
+                if i < ranges_count - 1:
+                    self.stdout.write("Currently indexing {} to {} '{}' objects".format(
+                        i * CHUNK_SIZE, i * CHUNK_SIZE + CHUNK_SIZE, doc._doc_type.model.__name__)
+                    )
+                    qs2 = qs[i*CHUNK_SIZE:i*CHUNK_SIZE+CHUNK_SIZE]
+                else:
+                    self.stdout.write("Currently indexing {} to {} '{}' objects".format(
+                        i * CHUNK_SIZE, i * CHUNK_SIZE + qs2.count(), doc._doc_type.model.__name__)
+                    )
+                    qs2 = qs[i*CHUNK_SIZE:]
+                doc().update(qs2)
 
     def _delete(self, models, options):
         index_names = [str(index) for index in registry.get_indices(models)]
